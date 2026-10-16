@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RUN2EARN - Chạy Bộ Kiếm Tiền | 1m = 100đ</title>
+  <meta name="description" content="Ứng dụng chạy bộ kiếm tiền công nghệ cao. Mỗi 1 mét chạy nhận ngay 100 VNĐ, nâng cấp giày siêu tốc, theo dõi GPS thực tế và rút tiền tức thì.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for Map Tracking -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-top-left"></div>
+  <div class="ambient-glow glow-bottom-right"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <img src="assets/logo_badge.jpg" alt="Run2Earn Logo" class="brand-logo">
+        <div class="brand-text">
+          <div class="brand-title">RUN<span class="neon-accent">2EARN</span></div>
+          <div class="brand-badge"><i class="fa-solid fa-bolt"></i> 1m = +100₫</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="run-screen" id="tab-run-btn">
+          <i class="fa-solid fa-person-running"></i>
+          <span>Đường Chạy</span>
+        </button>
+        <button class="nav-tab" data-tab="shop-screen" id="tab-shop-btn">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span>Nâng Cấp Giày</span>
+          <span class="nav-pill" id="shop-badge">HOT</span>
+        </button>
+        <button class="nav-tab" data-tab="wallet-screen" id="tab-wallet-btn">
+          <i class="fa-solid fa-wallet"></i>
+          <span>Rút Tiền</span>
+        </button>
+        <button class="nav-tab" data-tab="history-screen" id="tab-history-btn">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Thành Tích</span>
+        </button>
+      </nav>
+
+      <!-- Right Header Actions -->
+      <div class="header-actions">
+        <!-- Sound & Voice Coach Toggle -->
+        <button class="icon-btn" id="audio-toggle-btn" title="Bật/Tắt Âm Thanh & Giọng Cổ Vũ">
+          <i class="fa-solid fa-volume-high" id="audio-icon"></i>
+        </button>
+
+        <!-- Live Balance Widget -->
+        <div class="balance-card" id="balance-widget" title="Bấm để vào trang Rút Tiền">
+          <div class="coin-icon-wrapper">
+            <i class="fa-solid fa-coins golden-coin"></i>
+          </div>
+          <div class="balance-info">
+            <span class="balance-label">Ví Thu Nhập</span>
+            <span class="balance-amount" id="header-balance">0 ₫</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-content">
+    
+    <!-- ==================== TAB 1: RUN HUD ==================== -->
+    <section class="tab-pane active" id="run-screen">
+      
+      <!-- Top Running Banner & Earnings Hero -->
+      <div class="earnings-hero">
+        <div class="hero-bg-overlay"></div>
+        <div class="earnings-display-box">
+          <div class="rate-indicator">
+            <span class="pulse-dot"></span>
+            <span id="current-rate-text">HỆ SỐ: 100₫ / MÉT</span>
+            <span class="shoe-equipped-badge" id="hud-shoe-badge"><i class="fa-solid fa-shoe-prints"></i> Giày Tiêu Chuẩn (x1.0)</span>
+          </div>
+
+          <div class="earnings-counter-wrap">
+            <span class="currency-symbol">₫</span>
+            <span class="main-counter-number" id="session-earnings">0</span>
+            <div class="floating-coins-container" id="floating-coins-pool"></div>
+          </div>
+          <div class="earnings-subtitle">Tiền thưởng phiên chạy hiện tại</div>
+        </div>
+
+        <!-- Mode Selector: Máy Chạy Bộ / Mô Phỏng vs GPS Thực Tế -->
+        <div class="mode-switch-wrapper">
+          <button class="mode-btn active" id="mode-sim-btn">
+            <i class="fa-solid fa-gauge-high"></i> Mô Phỏng / Máy Chạy
+          </button>
+          <button class="mode-btn" id="mode-gps-btn">
+            <i class="fa-solid fa-location-crosshairs"></i> GPS Thực Tế Ngoài Trời
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Visualizer & Map Grid -->
+      <div class="run-center-grid">
+        
+        <!-- Left Visualizer Card: 3D Neon Track / Leaflet Map -->
+        <div class="glass-card visualizer-card">
+          <div class="card-header-flex">
+            <div class="visualizer-tabs">
+              <button class="vis-tab-btn active" id="vis-tab-track">
+                <i class="fa-solid fa-road"></i> Đường Chạy 3D
+              </button>
+              <button class="vis-tab-btn" id="vis-tab-map">
+                <i class="fa-solid fa-map-location-dot"></i> Bản Đồ Tuyến Đường
+              </button>
+            </div>
+
+            <!-- Route Selector for Map & Simulation -->
+            <div class="route-select-wrapper" id="route-select-box">
+              <label for="route-select"><i class="fa-solid fa-route"></i> Tuyến chạy:</label>
+              <select id="route-select" class="cyber-select">
+                <option value="hoan_kiem">Hồ Hoàn Kiếm (Hà Nội) - 1.7 km</option>
+                <option value="nguyen_hue">Phố Đi Bộ Nguyễn Huệ (Sài Gòn) - 1.0 km</option>
+                <option value="my_khe">Bờ Biển Mỹ Khê (Đà Nẵng) - 3.5 km</option>
+                <option value="free_run">Đường Chạy Tự Do (Vô hạn)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Visualizer 1: Dynamic Canvas Track -->
+          <div class="visualizer-view active" id="track-visualizer-container">
+            <canvas id="track-canvas"></canvas>
+            
+            <!-- Runner Status HUD Overlay -->
+            <div class="track-hud-overlay">
+              <div class="runner-speed-badge">
+                <span id="canvas-speed-label">0.0</span> <small>km/h</small>
+              </div>
+              <div class="runner-cadence-badge" id="runner-state-badge">
+                <i class="fa-solid fa-shoe-prints"></i> ĐANG NGHỈ
+              </div>
+            </div>
+
+            <!-- Milestone Progress Bar -->
+            <div class="milestone-hud">
+              <div class="milestone-text">
+                <span>Mục tiêu chặng kế: <strong id="next-milestone-text">100m (+10.000₫)</strong></span>
+                <span id="milestone-percent-text">0%</span>
+              </div>
+              <div class="milestone-bar-bg">
+                <div class="milestone-bar-fill" id="milestone-progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Visualizer 2: Leaflet Interactive Map -->
+          <div class="visualizer-view" id="map-visualizer-container">
+            <div id="leaflet-map"></div>
+            <div class="gps-status-pill" id="gps-status-pill">
+              <span class="gps-dot"></span>
+              <span id="gps-status-text">GPS Sẵn sàng</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Telemetry Dashboard & Live Metrics -->
+        <div class="telemetry-dashboard">
+          
+          <!-- Distance Card -->
+          <div class="glass-card stat-card glow-cyan">
+            <div class="stat-icon-wrap cyan">
+              <i class="fa-solid fa-person-running"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Quãng Đường</div>
+              <div class="stat-value-unit">
+                <span class="stat-value" id="val-distance">0</span>
+                <span class="stat-unit" id="unit-distance">m</span>
+              </div>
+              <div class="stat-subtext" id="val-distance-km">0.00 km</div>
+            </div>
+          </div>
+
+          <!-- Speed Card -->
+          <div class="glass-card stat-card glow-green">
+            <div class="stat-icon-wrap green">
+              <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Vận Tốc Hiện Tại</div>
+              <div class="stat-value-unit">
+                <span class="stat-value" id="val-speed">0.0</span>
+                <span class="stat-unit">km/h</span>
+              </div>
+              <div class="stat-subtext" id="val-pace">Pace: --:-- /km</div>
+            </div>
+          </div>
+
+          <!-- Time Elapsed Card -->
+          <div class="glass-card stat-card glow-amber">
+            <div class="stat-icon-wrap amber">
+              <i class="fa-solid fa-stopwatch"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Thời Gian Chạy</div>
+              <div class="stat-value-unit">
+                <span class="stat-value mono" id="val-time">00:00:00</span>
+              </div>
+              <div class="stat-subtext" id="run-status-text">Trạng thái: Tạm dừng</div>
+            </div>
+          </div>
+
+          <!-- Calories Burned Card -->
+          <div class="glass-card stat-card glow-orange">
+            <div class="stat-icon-wrap orange">
+              <i class="fa-solid fa-fire-flame-curved"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Calo Tiêu Thụ</div>
+              <div class="stat-value-unit">
+                <span class="stat-value" id="val-calories">0</span>
+                <span class="stat-unit">kcal</span>
+              </div>
+              <div class="stat-subtext" id="val-steps">0 bước chân</div>
+            </div>
+          </div>
+
+          <!-- Total Money Earned So Far (All-time) -->
+          <div class="glass-card stat-card glow-gold highlight-gold">
+            <div class="stat-icon-wrap gold">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Tổng Đã Tích Lũy</div>
+              <div class="stat-value-unit">
+                <span class="stat-value gold-text" id="val-total-wallet">0 ₫</span>
+              </div>
+              <div class="stat-subtext">Đã cộng vào ví chính</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Controls Deck -->
+      <div class="glass-card controls-deck">
+        <div class="controls-left">
+          <!-- Simulation Pace Controls (Shown in Sim Mode) -->
+          <div class="sim-speed-box" id="sim-speed-controls">
+            <div class="controls-label"><i class="fa-solid fa-sliders"></i> Tốc độ mô phỏng máy chạy:</div>
+            <div class="quick-speed-buttons">
+              <button class="speed-preset-btn" data-speed="4.5">🚶 Đi bộ (4.5 km/h)</button>
+              <button class="speed-preset-btn active" data-speed="8.0">🏃 Jogging (8.0 km/h)</button>
+              <button class="speed-preset-btn" data-speed="12.0">⚡ Chạy nhanh (12 km/h)</button>
+              <button class="speed-preset-btn" data-speed="18.0">🚀 Bứt tốc (18 km/h)</button>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="sim-speed-slider" min="1" max="25" step="0.5" value="8" class="cyber-slider">
+              <span class="slider-val-tag" id="slider-speed-val">8.0 km/h</span>
+            </div>
+          </div>
+
+          <!-- GPS Controls (Shown in GPS Mode) -->
+          <div class="gps-info-box hidden" id="gps-info-controls">
+            <div class="controls-label"><i class="fa-solid fa-satellite"></i> Tín hiệu GPS Vệ Tinh:</div>
+            <div class="gps-stats-row">
+              <div class="gps-tag"><i class="fa-solid fa-bullseye"></i> Độ chính xác: <span id="gps-accuracy">--</span></div>
+              <div class="gps-tag"><i class="fa-solid fa-compass"></i> Tọa độ: <span id="gps-coords">Đang định vị...</span></div>
+            </div>
+            <p class="gps-hint"><i class="fa-solid fa-info-circle"></i> Cầm điện thoại hoặc laptop di chuyển ngoài trời, hệ thống sẽ tự đo mét và cộng 100₫ liên tục!</p>
+          </div>
+        </div>
+
+        <!-- Master Action Buttons -->
+        <div class="controls-actions">
+          <button class="btn-action btn-start" id="btn-start-run">
+            <i class="fa-solid fa-play"></i> BẮT ĐẦU CHẠY
+          </button>
+          <button class="btn-action btn-pause hidden" id="btn-pause-run">
+            <i class="fa-solid fa-pause"></i> TẠM DỪNG
+          </button>
+          <button class="btn-action btn-resume hidden" id="btn-resume-run">
+            <i class="fa-solid fa-play"></i> TIẾP TỤC
+          </button>
+          <button class="btn-action btn-stop" id="btn-stop-run" disabled>
+            <i class="fa-solid fa-flag-checkered"></i> KẾT THÚC & NHẬN TIỀN
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== TAB 2: GEAR & UPGRADE SHOP ==================== -->
+    <section class="tab-pane" id="shop-screen">
+      <div class="section-banner">
+        <div class="banner-content">
+          <span class="tag-glow"><i class="fa-solid fa-bolt"></i> TĂNG CƯỜNG THU NHẬP</span>
+          <h2>Cửa Hàng Nâng Cấp Giày & Buff</h2>
+          <p>Dùng số tiền bạn vừa chạy được để sắm giày xịn! Hệ số càng cao, mỗi mét chạy bạn càng nhận được nhiều tiền hơn!</p>
+        </div>
+      </div>
+
+      <div class="shop-grid" id="shoes-shop-grid">
+        <!-- Dynamically rendered by JavaScript -->
+      </div>
+
+      <!-- Consumable Buffs Section -->
+      <div class="buffs-section-title">
+        <h3><i class="fa-solid fa-flask-vial"></i> Vật Phẩm Hỗ Trợ Tức Thì (Energy Buffs)</h3>
+      </div>
+      <div class="buffs-grid" id="buffs-shop-grid">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: WALLET & CASHOUT ==================== -->
+    <section class="tab-pane" id="wallet-screen">
+      <div class="wallet-container">
+        
+        <!-- Wallet Card -->
+        <div class="glass-card digital-wallet-card">
+          <div class="wallet-chip"><i class="fa-solid fa-microchip"></i> RUN2EARN VIP CARD</div>
+          <div class="wallet-balance-row">
+            <div class="w-label">Số Dư Khả Dụng Rút:</div>
+            <div class="w-amount" id="cashout-available-balance">0 ₫</div>
+          </div>
+          <div class="wallet-card-footer">
+            <span class="card-holder">VẬN ĐỘNG VIÊN KIẾM TIỀN</span>
+            <span class="card-network"><i class="fa-solid fa-shield-halved"></i> Bảo mật 100%</span>
+          </div>
+        </div>
+
+        <!-- Cashout Form -->
+        <div class="glass-card cashout-form-card">
+          <h3><i class="fa-solid fa-money-bill-transfer"></i> Lệnh Rút Tiền Về Tài Khoản</h3>
+          <p class="form-sub">Chọn phương thức nhận tiền và rút tiền thưởng chạy bộ của bạn ngay lập tức.</p>
+
+          <!-- Payment Methods -->
+          <div class="payment-methods">
+            <label class="pay-method-btn active">
+              <input type="radio" name="payMethod" value="momo" checked>
+              <span class="pay-logo momo">MoMo</span>
+              <span class="pay-name">Ví MoMo</span>
+            </label>
+            <label class="pay-method-btn">
+              <input type="radio" name="payMethod" value="zalopay">
+              <span class="pay-logo zalopay">ZaloPay</span>
+              <span class="pay-name">ZaloPay</span>
+            </label>
+            <label class="pay-method-btn">
+              <input type="radio" name="payMethod" value="vietcombank">
+              <span class="pay-logo vcb">VCB</span>
+              <span class="pay-name">Vietcombank</span>
+            </label>
+            <label class="pay-method-btn">
+              <input type="radio" name="payMethod" value="mbbank">
+              <span class="pay-logo mb">MB</span>
+              <span class="pay-name">MB Bank</span>
+            </label>
+            <label class="pay-method-btn">
+              <input type="radio" name="payMethod" value="techcombank">
+              <span class="pay-logo tcb">TCB</span>
+              <span class="pay-name">Techcombank</span>
+            </label>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="form-group">
+            <label for="cashout-account-number"><i class="fa-solid fa-id-card"></i> Số điện thoại Ví / Số tài khoản Ngân hàng:</label>
+            <input type="text" id="cashout-account-number" placeholder="Ví dụ: 0912345678 hoặc 1029384756" class="cyber-input">
+          </div>
+
+          <div class="form-group">
+            <label for="cashout-account-name"><i class="fa-solid fa-user"></i> Tên người thụ hưởng (Viết hoa không dấu):</label>
+            <input type="text" id="cashout-account-name" placeholder="Ví dụ: NGUYEN VAN A" class="cyber-input">
+          </div>
+
+          <div class="form-group">
+            <label for="cashout-amount"><i class="fa-solid fa-coins"></i> Số tiền muốn rút (VNĐ):</label>
+            <div class="input-with-quick">
+              <input type="number" id="cashout-amount" placeholder="Nhập số tiền..." min="1000" step="1000" class="cyber-input">
+              <button type="button" class="btn-quick-max" id="btn-cashout-all">Rút hết</button>
+            </div>
+            <!-- Quick Chips -->
+            <div class="quick-amount-chips">
+              <button type="button" class="chip-btn" data-val="10000">10.000₫</button>
+              <button type="button" class="chip-btn" data-val="50000">50.000₫</button>
+              <button type="button" class="chip-btn" data-val="100000">100.000₫</button>
+              <button type="button" class="chip-btn" data-val="500000">500.000₫</button>
+            </div>
+          </div>
+
+          <button class="btn-submit-cashout" id="btn-submit-cashout">
+            <i class="fa-solid fa-paper-plane"></i> XÁC NHẬN RÚT TIỀN NGAY
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: ACHIEVEMENTS & HISTORY ==================== -->
+    <section class="tab-pane" id="history-screen">
+      <div class="history-layout">
+        
+        <!-- Achievements Badges -->
+        <div class="glass-card badges-card">
+          <div class="badges-header">
+            <h3><i class="fa-solid fa-medal"></i> Danh Hiệu & Thành Tích</h3>
+            <span class="unlocked-counter" id="unlocked-badges-count">0 / 6 Mở khóa</span>
+          </div>
+          <div class="badges-grid" id="badges-container">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Run History Table -->
+        <div class="glass-card history-card">
+          <div class="history-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Nhật Ký Buổi Chạy</h3>
+            <button class="btn-clear-history" id="btn-clear-history"><i class="fa-solid fa-trash-can"></i> Xóa lịch sử</button>
+          </div>
+          <div class="history-table-wrapper">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Thời Gian</th>
+                  <th>Chế Độ</th>
+                  <th>Quãng Đường</th>
+                  <th>Thời Lượng</th>
+                  <th>Vận Tốc TB</th>
+                  <th>Tiền Thưởng Nhận</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL 1: RUN FINISHED SUMMARY ==================== -->
+  <div class="modal-overlay hidden" id="modal-run-finish">
+    <div class="modal-card finish-modal-card">
+      <div class="modal-confetti"></div>
+      <div class="modal-header-icon">
+        <div class="trophy-pulse"><i class="fa-solid fa-trophy"></i></div>
+      </div>
+      <h2>XUẤT SẮC! HOÀN THÀNH BUỔI CHẠY</h2>
+      <p class="finish-congrats">Bạn đã biến mồ hôi thành tiền mặt thành công!</p>
+
+      <div class="finish-highlight-reward">
+        <div class="f-reward-label">Tổng tiền kiếm được:</div>
+        <div class="f-reward-val" id="modal-finish-money">+0 ₫</div>
+        <div class="f-reward-sub" id="modal-finish-rate">Quy đổi: 1m = 100₫</div>
+      </div>
+
+      <div class="finish-stats-grid">
+        <div class="f-stat-item">
+          <i class="fa-solid fa-road"></i>
+          <span class="label">Quãng đường</span>
+          <strong id="modal-finish-distance">0 m</strong>
+        </div>
+        <div class="f-stat-item">
+          <i class="fa-solid fa-stopwatch"></i>
+          <span class="label">Thời gian</span>
+          <strong id="modal-finish-time">00:00</strong>
+        </div>
+        <div class="f-stat-item">
+          <i class="fa-solid fa-fire"></i>
+          <span class="label">Calo đốt</span>
+          <strong id="modal-finish-cal">0 kcal</strong>
+        </div>
+        <div class="f-stat-item">
+          <i class="fa-solid fa-bolt"></i>
+          <span class="label">Tốc độ TB</span>
+          <strong id="modal-finish-speed">0 km/h</strong>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-claim-modal" id="modal-btn-claim">
+          <i class="fa-solid fa-check"></i> CỘNG VÀO VÍ & TIẾP TỤC
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: CASHOUT SUCCESS RECEIPT ==================== -->
+  <div class="modal-overlay hidden" id="modal-receipt">
+    <div class="modal-card receipt-card">
+      <button class="close-receipt-btn" id="modal-close-receipt">&times;</button>
+      <div class="receipt-success-badge">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="receipt-title">GIAO DỊCH RÚT TIỀN THÀNH CÔNG</div>
+      <div class="receipt-amount-display" id="receipt-amount">50,000 ₫</div>
+      
+      <div class="receipt-divider"></div>
+
+      <div class="receipt-details">
+        <div class="receipt-row">
+          <span>Phương thức:</span>
+          <strong id="receipt-method">Ví MoMo</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Số tài khoản:</span>
+          <strong id="receipt-account">0987***321</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Người nhận:</span>
+          <strong id="receipt-receiver">NGUYEN VAN A</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Mã giao dịch:</span>
+          <strong class="receipt-code" id="receipt-txid">R2E-88392104</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Thời gian:</span>
+          <span id="receipt-timestamp">16/10/2026 23:20</span>
+        </div>
+        <div class="receipt-row">
+          <span>Trạng thái:</span>
+          <span class="status-success"><i class="fa-solid fa-bolt"></i> Tiền đã về tài khoản</span>
+        </div>
+      </div>
+
+      <div class="receipt-seal">
+        <span>ĐÃ THANH TOÁN</span>
+      </div>
+
+      <button class="btn-receipt-done" id="receipt-done-btn">ĐÓNG HÓA ĐƠN</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
